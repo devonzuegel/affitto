@@ -1,0 +1,45 @@
+{
+  "name": "agentscript",
+  "version": "0.0.9",
+  "description": "Minimalist Agent Based Modeling (ABM) framework based on NetLogo",
+  "main": "lib/agentscript.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/backspaces/agentscript.git"
+  },
+  "keywords": [
+    "agent",
+    "abm",
+    "modeling"
+  ],
+  "author": "Owen Densmore",
+  "license": "GPLv3",
+  "bugs": {
+    "url": "https://github.com/backspaces/agentscript/issues"
+  },
+  "scripts": {
+    "gulp":  "gulp",
+    "all":   "gulp all",
+    "build": "gulp build",
+    "docs":  "gulp docs",
+    "watch": "gulp watch&",
+
+    "git-diff": "git diff Gulpfile.js LICENSE README.md package.json src extras models sketches",
+    "git-prep": "git checkout master && gulp all && git add . && git status",
+    "git-commit": "git checkout master && git commit -v && git push origin master",
+    "gh-pages": "git checkout gh-pages && git merge master && git push origin gh-pages && git checkout master"
+  },
+  "devDependencies": {
+    "gulp": "~3.8.11",
+    "gulp-coffee": "~2.3.1",
+    "gulp-concat": "~2.5.2",
+    "gulp-docco": "0.0.4",
+    "gulp-rename": "~1.2.0",
+    "gulp-task-listing": "0.3.0",
+    "gulp-uglify": "0.3.2",
+    "lazypipe": "0.2.2"
+  }
+}

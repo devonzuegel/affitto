@@ -1,0 +1,12 @@
+/Users/devonzuegel/.rvm/rubies/ruby-2.2.2/bin/ruby -r ./siteconf20151015-85828-1cn545w.rb extconf.rb
+creating Makefile
+
+make "DESTDIR=" clean
+
+make "DESTDIR="
+compiling mapper.cpp
+compiling rubymain.cpp
+linking shared-object fastfilereaderext.bundle
+
+make "DESTDIR=" install
+/usr/bin/install -c -m 0755 fastfilereaderext.bundle ./.gem.20151015-85828-126vv6
