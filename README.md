@@ -2,6 +2,8 @@
 
 ## About the project ##
 
+Affitto is a suite of agent-based models (ABMs) that explores the emergent behavior within housing markets and the impact of rent control and other zoning regulations.
+
 ## Contributing to our models ##
 
 All of our models (including a template and examples) can be found in the `/models` directory. All examples are standalone `.html` files with inline coffeescript, while the template model follows the same structure as each of our custom models:
