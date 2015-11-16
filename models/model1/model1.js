@@ -21,99 +21,80 @@
       return MyModel.__super__.constructor.apply(this, arguments);
     }
 
-    MyModel.prototype.startup = function() {
-      Shapes.add("bowtie", true, function(c) {
-        return Shapes.poly(c, [[-.5, -.5], [.5, .5], [-.5, .5], [.5, -.5]]);
-      });
-      if (window.location.protocol === "file:") {
-        console.log("Warning: file:// protocol used!");
-        console.log("This prevents two user defined image shapes from loading!");
-        return console.log("Use http:// protocol to enable image shapes.");
-      } else {
-        Shapes.add("cup", true, u.importImage("data/coffee.png"));
-        Shapes.add("redfish", false, u.importImage("data/redfish64t.png"));
-        return Shapes.add("twitter", false, u.importImage("data/twitter.png"));
+    MyModel.prototype.gaussian_approx = function(_min, _max) {
+      var curve, diff, middle;
+      if (_min == null) {
+        _min = 0;
       }
+      if (_max == null) {
+        _max = 1;
+      }
+      curve = ((Math.random() + Math.random() + Math.random() + Math.random() + Math.random() + Math.random() + Math.random() + Math.random()) - 4) / 4;
+      diff = _max - _min;
+      middle = _max - diff / 2.0;
+      return middle + diff * curve;
     };
 
     MyModel.prototype.setup = function() {
-      var a, i, j, k, len, len1, len2, num, p, ref, ref1, ref2, s;
-      this.population = 100;
-      this.size = 2.0;
-      this.speed = .5;
+      var a, i, j, k, l, len, len1, nvals, p, ref, ref1, ref2, v, vals;
+      vals = 0;
+      nvals = 1000;
+      for (i = j = 0, ref = nvals; 0 <= ref ? j <= ref : j >= ref; i = 0 <= ref ? ++j : --j) {
+        v = this.gaussian_approx(0, 100);
+        vals += v;
+      }
+      log(vals / nvals);
+      return;
+      this.population = 3;
+      this.size = 0.9;
+      this.speed = 0.3;
       this.wiggle = u.degToRad(30);
-      this.startCircle = true;
-      this.turtles.setDefault("size", this.size);
       this.turtles.setUseSprites();
+      this.turtles.setDefault('size', this.size);
       this.anim.setRate(30, false);
-      ref = this.patches;
-      for (i = 0, len = ref.length; i < len; i++) {
-        p = ref[i];
+      ref1 = this.patches;
+      for (k = 0, len = ref1.length; k < len; k++) {
+        p = ref1[k];
         p.color = Maps.randomGray(0, 100);
-        if (p.x === 0 || p.y === 0) {
-          p.color = "blue";
-        }
+        p.price = 11111111;
       }
-      ref1 = this.turtles.create(this.population);
-      for (j = 0, len1 = ref1.length; j < len1; j++) {
-        a = ref1[j];
-        a.shape = u.oneOf(Shapes.names());
-        if (this.startCircle) {
-          a.forward(this.patches.maxX / 2);
-        } else {
-          a.setXY.apply(a, this.patches.randomPt());
-        }
+      ref2 = this.turtles.create(this.population);
+      for (l = 0, len1 = ref2.length; l < len1; l++) {
+        a = ref2[l];
+        a.shape = 'person';
       }
-      log("total turtles: " + this.turtles.length + ", total patches: " + this.patches.length);
-      ref2 = Shapes.names();
-      for (k = 0, len2 = ref2.length; k < len2; k++) {
-        s = ref2[k];
-        num = this.turtles.getPropWith("shape", s).length;
-        log(num + " " + s);
-      }
-      return console.log("Patch(0,0): ", this.patches.patchXY(0, 0));
+      return log(this.patches.patchXY(0, 0));
     };
 
     MyModel.prototype.step = function() {
-      var a, i, j, len, len1, p, ref, ref1;
+      var a, j, k, len, len1, p, ref, ref1;
       ref = this.turtles;
-      for (i = 0, len = ref.length; i < len; i++) {
-        a = ref[i];
+      for (j = 0, len = ref.length; j < len; j++) {
+        a = ref[j];
         this.updateTurtles(a);
       }
       if (this.anim.ticks % 100 === 0) {
         ref1 = this.patches;
-        for (j = 0, len1 = ref1.length; j < len1; j++) {
-          p = ref1[j];
-          this.updatePatches(p);
+        for (k = 0, len1 = ref1.length; k < len1; k++) {
+          p = ref1[k];
+          this.updatePrices(p);
         }
         this.reportInfo();
         this.refreshPatches = true;
         if (this.anim.ticks === 300) {
-          this.setSpotlight(this.turtles.oneOf());
-        }
-        if (this.anim.ticks === 600) {
-          this.setSpotlight(null);
+          return this.setSpotlight(this.turtles.oneOf());
         }
       } else {
-        this.refreshPatches = false;
-      }
-      if (this.anim.ticks === 1000) {
-        log("..stopping, restart by app.start()");
-        return this.stop();
+        return this.refreshPatches = false;
       }
     };
 
-    MyModel.prototype.updateTurtles = function(a) {
-      a.rotate(u.randomCentered(this.wiggle));
-      return a.forward(this.speed);
+    MyModel.prototype.updateTurtles = function(t) {
+      t.rotate(u.randomCentered(this.wiggle));
+      return t.forward(this.speed);
     };
 
-    MyModel.prototype.updatePatches = function(p) {
-      if (p.x !== 0 && p.y !== 0) {
-        return p.color = Maps.randomColor();
-      }
-    };
+    MyModel.prototype.updatePrices = function(p) {};
 
     MyModel.prototype.reportInfo = function() {
       var avgHeading, headings;
@@ -130,7 +111,7 @@
 
   model = new MyModel({
     div: "layers",
-    size: 13,
+    size: 20,
     minX: -16,
     maxX: 16,
     minY: -16,
