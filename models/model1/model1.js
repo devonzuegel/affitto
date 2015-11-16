@@ -22,61 +22,60 @@
     }
 
     MyModel.prototype.gaussian_approx = function(_min, _max) {
-      var curve, diff, middle;
+      var curve, diff, middle, result;
       if (_min == null) {
         _min = 0;
       }
       if (_max == null) {
         _max = 1;
       }
-      curve = ((Math.random() + Math.random() + Math.random() + Math.random() + Math.random() + Math.random() + Math.random() + Math.random()) - 4) / 4;
-      diff = _max - _min;
-      middle = _max - diff / 2.0;
-      return middle + diff * curve;
+      result = -1;
+      while (result < 0) {
+        curve = ((Math.random() + Math.random() + Math.random() + Math.random() + Math.random() + Math.random() + Math.random() + Math.random()) - 4) / 4;
+        diff = _max - _min;
+        middle = _max - diff / 2.0;
+        result = middle + diff * curve;
+      }
+      return result;
     };
 
     MyModel.prototype.setup = function() {
-      var a, i, j, k, l, len, len1, nvals, p, ref, ref1, ref2, v, vals;
-      vals = 0;
-      nvals = 1000;
-      for (i = j = 0, ref = nvals; 0 <= ref ? j <= ref : j >= ref; i = 0 <= ref ? ++j : --j) {
-        v = this.gaussian_approx(0, 100);
-        vals += v;
-      }
-      log(vals / nvals);
-      return;
+      var a, color, i, j, len, len1, p, ref, ref1, results;
       this.population = 3;
       this.size = 0.9;
-      this.speed = 0.3;
-      this.wiggle = u.degToRad(30);
+      this.speed = 100;
+      this.wiggle = u.degToRad(100);
+      this.initial_price_range = [0, 100];
       this.turtles.setUseSprites();
       this.turtles.setDefault('size', this.size);
       this.anim.setRate(30, false);
-      ref1 = this.patches;
-      for (k = 0, len = ref1.length; k < len; k++) {
-        p = ref1[k];
-        p.color = Maps.randomGray(0, 100);
-        p.price = 11111111;
+      ref = this.patches;
+      for (i = 0, len = ref.length; i < len; i++) {
+        p = ref[i];
+        p.price = this.gaussian_approx(this.initial_price_range[0], this.initial_price_range[1]);
+        color = Math.floor(p.price);
+        p.color = Maps.randomGray(color, color);
       }
-      ref2 = this.turtles.create(this.population);
-      for (l = 0, len1 = ref2.length; l < len1; l++) {
-        a = ref2[l];
-        a.shape = 'person';
+      ref1 = this.turtles.create(this.population);
+      results = [];
+      for (j = 0, len1 = ref1.length; j < len1; j++) {
+        a = ref1[j];
+        results.push(a.shape = 'person');
       }
-      return log(this.patches.patchXY(0, 0));
+      return results;
     };
 
     MyModel.prototype.step = function() {
-      var a, j, k, len, len1, p, ref, ref1;
+      var a, i, j, len, len1, p, ref, ref1;
       ref = this.turtles;
-      for (j = 0, len = ref.length; j < len; j++) {
-        a = ref[j];
+      for (i = 0, len = ref.length; i < len; i++) {
+        a = ref[i];
         this.updateTurtles(a);
       }
       if (this.anim.ticks % 100 === 0) {
         ref1 = this.patches;
-        for (k = 0, len1 = ref1.length; k < len1; k++) {
-          p = ref1[k];
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          p = ref1[j];
           this.updatePrices(p);
         }
         this.reportInfo();
@@ -91,7 +90,8 @@
 
     MyModel.prototype.updateTurtles = function(t) {
       t.rotate(u.randomCentered(this.wiggle));
-      return t.forward(this.speed);
+      t.forward(this.speed);
+      return this.speed /= 1.01;
     };
 
     MyModel.prototype.updatePrices = function(p) {};
