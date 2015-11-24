@@ -57,7 +57,9 @@ class MyModel extends ABM.Model
       @setSpotlight @turtles.oneOf() if @anim.ticks is 300
     else
       @refreshPatches = false
-
+    if @anim.ticks is 400
+      log "..stopping, restart by app.start()"
+      @stop()
   # Three of our own methods to manage turtles & patches
   # and report model state.
   updateTurtles: (t) ->   # `t` is turtle
