@@ -1,14 +1,11 @@
 u = ABM.Util; Shapes = ABM.Shapes; Maps = ABM.ColorMaps
 log = (arg) -> console.log arg
 
-TURTLE_POP     = 3
-TURTLE_SIZE    = 1
-TURTLE_SPEED   = 10
+TURTLE_POP     = 500
+TURTLE_SIZE    = 0.8
 TURTLE_VAR     = 3
-TURTLE_WIGGLE  = 100
-PRICE_RANGE    = [0, 255]
 STDEV          = 40
-ANIMATION_RATE = 1
+ANIMATION_RATE = 5
 
 # The following min/max values were found with the zipcode_map.rb script.
 LAT_RANGE      = [20, 64]
@@ -22,11 +19,9 @@ class MyModel extends ABM.Model
       result += @random_num(_max, _min)
     return result / (1.0 * n_iterations)
 
-  new_price: (p)                  ->  Math.floor @gaussian_approx(p.desirability - STDEV, p.desirability + STDEV)
-  new_desirability:               ->  Math.floor @gaussian_approx(@price_range[0] + STDEV, @price_range[1] - STDEV)
-  patch_utility: (p)              ->  p.desirability - p.price + @random_num(-TURTLE_VAR, TURTLE_VAR)
-  random_num: (_max, _min = 0)    ->  Math.floor(Math.random() * (_max - _min) + _min)
-  price_color: (p)                ->  Maps.randomGray(p.price, p.price)
+  new_price: (p)               ->  Math.floor @gaussian_approx(p.desirability - STDEV, p.desirability + STDEV)
+  patch_utility: (p)           ->  p.desirability - p.price + @random_num(-TURTLE_VAR, TURTLE_VAR)
+  random_num: (_max, _min = 0) ->  Math.floor(Math.random() * (_max - _min) + _min)
 
   initialize_patch: (p) ->
     p.desirability = -1
@@ -36,18 +31,15 @@ class MyModel extends ABM.Model
   initialize_turtle: (t) ->
     t.shape     = 'person'
     t.color     = '#555555'
-    t.penDown   = true
+    # t.penDown   = true
     random_i    = @random_num(@land_patches.length - 1)
-    @land_patches[random_i].color = '#555'
+    # @land_patches[random_i].color = '#555'
     t.moveTo(@land_patches[random_i])
 
   # Initialize our model via the `setup` abstract method (called by Model.constructor).
   setup: ->
     @population  = TURTLE_POP
     @size        = TURTLE_SIZE                # size in patch coords
-    @speed       = TURTLE_SPEED               # move forward this amount in patch coords
-    @wiggle      = u.degToRad(TURTLE_WIGGLE)  # degrees/radians to wiggle
-    @price_range = PRICE_RANGE
 
     @turtles.setUseSprites()  # Convert turtle shape to bitmap for better performance.
     @turtles.setDefault 'size', @size
@@ -63,7 +55,7 @@ class MyModel extends ABM.Model
       patch.desirability = @gaussian_approx(p.desirability - STDEV, p.desirability + STDEV)
       # log patch.desirability
       patch.price        = zip[1]
-    @initialize_turtle(t) for t in @turtles.create(@population)  # Create `population` # of turtles.
+    @turtles.create(@population, (t) => @initialize_turtle(t))  # Create `population` # of turtles.
 
   # Update our model via the second abstract method, `step` (called by Model.animate).
   step: ->
@@ -88,8 +80,15 @@ class MyModel extends ABM.Model
 
   updatePatch: (p) ->   # p is patch
     n_turtles = p.turtlesHere().length
-    # if n_turtles > 0 then p.price += n_turtles
-    # else                  p.price -= 1
+    if n_turtles > 1
+      p.desirability = 10 - n_turtles
+    else if n_turtles < 1
+      p.desirability = 1
+    else
+      p.desirability = 10
+
+    p.desirability *= 50 + @gaussian_approx(-10, 10)
+    p.price = @gaussian_approx(-10, 10)
 
   reportInfo: ->
     # Report the average heading, in radians and degrees
