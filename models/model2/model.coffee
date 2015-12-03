@@ -1,11 +1,16 @@
 u = ABM.Util; Shapes = ABM.Shapes; Maps = ABM.ColorMaps
 log = (arg) -> console.log arg
 
-TURTLE_POP     = 500
-TURTLE_SIZE    = 0.8
+TURTLE_POP     = 300
+TURTLE_SIZE    = 0.7
 TURTLE_VAR     = 3
 STDEV          = 40
-ANIMATION_RATE = 5
+ANIMATION_RATE = 8
+STABILITY      = 0.8
+NBR_RADIUS     = 1
+NBR_DISCOUNT   = 2
+OVERPOP_COST   = 2
+IDEAL_POP      = 0
 
 # The following min/max values were found with the zipcode_map.rb script.
 LAT_RANGE      = [20, 64]
@@ -18,28 +23,31 @@ class MyModel extends ABM.Model
     for i in [0...n_iterations]
       result += @random_num(_max, _min)
     return result / (1.0 * n_iterations)
-
   new_price: (p)               ->  Math.floor @gaussian_approx(p.desirability - STDEV, p.desirability + STDEV)
   patch_utility: (p)           ->  p.desirability - p.price + @random_num(-TURTLE_VAR, TURTLE_VAR)
   random_num: (_max, _min = 0) ->  Math.floor(Math.random() * (_max - _min) + _min)
-
+  unique_array: (a)            -> a.filter((item, pos) -> a.indexOf(item) == pos)
+  shuffle_array: (array)       ->
+    for i in [0...array.length - 1]
+      j        = Math.floor(Math.random() * (i + 1))
+      temp     = array[i]
+      array[i] = array[j]
+      array[j] = temp
+    array
   initialize_patch: (p) ->
-    p.desirability = -1
+    p.desirability = Number.NEGATIVE_INFINITY
     p.price        = Number.POSITIVE_INFINITY
     p.color        = '#A7D9F6'
-
   initialize_turtle: (t) ->
-    t.shape     = 'person'
-    t.color     = '#555555'
-    # t.penDown   = true
-    random_i    = @random_num(@land_patches.length - 1)
-    # @land_patches[random_i].color = '#555'
+    t.shape  = 'person'
+    t.color  = '#555555'
+    random_i = @random_num(@land_patches.length - 1)
     t.moveTo(@land_patches[random_i])
 
   # Initialize our model via the `setup` abstract method (called by Model.constructor).
   setup: ->
-    @population  = TURTLE_POP
-    @size        = TURTLE_SIZE                # size in patch coords
+    @population = TURTLE_POP
+    @size       = TURTLE_SIZE                # size in patch coords
 
     @turtles.setUseSprites()  # Convert turtle shape to bitmap for better performance.
     @turtles.setDefault 'size', @size
@@ -53,59 +61,56 @@ class MyModel extends ABM.Model
       patch.color = 'white'
       patch.sizerank = zip[0]
       patch.desirability = @gaussian_approx(p.desirability - STDEV, p.desirability + STDEV)
-      # log patch.desirability
-      patch.price        = zip[1]
+      patch.price = zip[1]
+    @land_patches = @unique_array(@land_patches)
+    log @land_patches.length
     @turtles.create(@population, (t) => @initialize_turtle(t))  # Create `population` # of turtles.
 
   # Update our model via the second abstract method, `step` (called by Model.animate).
   step: ->
-    @updatePatch(p)  for p in @patches
+    # log @anim.ticks
+    @updatePatch(p)  for p in @land_patches
     @updateTurtle(t) for t in @turtles
     @refreshPatches = true
-
-    ## TODO desirability could depend on being near friends / overcrowding
-
-    if @anim.ticks % 100 is 0  # Every 100 steps.
-      @reportInfo()
-      @setSpotlight @turtles.oneOf() if @anim.ticks is 300
-    if @anim.ticks > 100
-      log ".. and now we're done! Restart with app.start()"
-      @stop()
+    # @anim.stop() # if @anim.ticks == 100
 
   updateTurtle: (t) ->
+    return if (Math.random() < STABILITY)
     best_so_far = t.p
-    for patch in @land_patches
+
+    # Without shuffling, we get a bias towards east coast patches since they show up
+    # later in the @land_patches array.
+    for patch in @shuffle_array(@land_patches)
       best_so_far = patch if (@patch_utility(patch) > @patch_utility(best_so_far))
+
     t.moveTo(best_so_far)
 
   updatePatch: (p) ->   # p is patch
+    ### TODO: things to incoprorate:
+    - desirability could depend on being near friends / overcrowding
+      + incorporate population of this patch and also of neighboring patches
+    - how long a patch has been left empty >> price lowers a lot
+    - turtle less likely to move if he moved recently
+    - turtles prefer to not move long distances if possible (cost to distance from
+      current patch to next patch)
+    ###
     n_turtles = p.turtlesHere().length
-    if n_turtles > 1
-      p.desirability = 10 - n_turtles
-    else if n_turtles < 1
-      p.desirability = 1
-    else
-      p.desirability = 10
+    p.desirability = if (n_turtles > IDEAL_POP) then -OVERPOP_COST * n_turtles else n_turtles + 10
 
-    p.desirability *= 50 + @gaussian_approx(-10, 10)
+    nbr_patches      = @patches.inRadius(p, NBR_RADIUS)
+    random_nbr_patch = nbr_patches[@random_num(nbr_patches.length - 1)]
+    p.desirability  += random_nbr_patch.turtlesHere().length / (NBR_DISCOUNT * 1.0)
+
+    p.desirability += @gaussian_approx(-10, 10)
     p.price = @gaussian_approx(-10, 10)
-
-  reportInfo: ->
-    # Report the average heading, in radians and degrees
-    headings = @turtles.getProp "heading"
-    avgHeading = (headings.reduce (a,b) -> a + b) / @turtles.length
-    # Note: multiline strings. block strings also available.
-    # log "average heading of turtles:
-    #      #{avgHeading.toFixed(2)} radians,
-    #      #{u.radToDeg(avgHeading).toFixed(2)} degrees"
 
 # Now that we've build our class, we call it with Model's
 # constructor arguments:
 #     divName, patchSize, minX, maxX, minY, maxY,
 #     isTorus = false, hasNeighbors = true
 model = new MyModel({
-  div:          "layers",
-  size:         15,
+  div:          'layers',
+  size:         17,
 
   minX:         LNG_RANGE[0],
   maxX:         LNG_RANGE[1],
