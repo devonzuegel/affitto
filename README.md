@@ -17,16 +17,18 @@ All of our models (including a template and examples) can be found in the `/mode
 
 #### Working in Coffeescript ####
 
-To install Coffeescript with the Node Package Manager:
+To install Coffeescript, Browserify, and Coffeeify with the Node Package Manager:
 
 ```bash
 $ sudo npm install -g coffee-script
+$ sudo npm install -g browserify
+$ sudo npm install -g coffeeify
 ```
 
 To continuously compile coffeescript into the `.js` files required in the models `.html`, run the following:
 
 ```bash
-$ coffee –wc -o /path/to/coffee/files /path/to/js/files/*.coffee
+$ watch -n 2 'rm model.js; browserify -t coffeeify --extension=".coffee" model.coffee > model.js'
 ```
 
 For example, when working on our template model:

@@ -47,7 +47,7 @@ class MyModel extends ABM.Model
   # Initialize our model via the `setup` abstract method (called by Model.constructor).
   setup: ->
     @population = TURTLE_POP
-    @size       = TURTLE_SIZE                # size in patch coords
+    @size       = TURTLE_SIZE   # size in patch coords
 
     @turtles.setUseSprites()  # Convert turtle shape to bitmap for better performance.
     @turtles.setDefault 'size', @size
