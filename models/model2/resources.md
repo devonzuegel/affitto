@@ -1,0 +1,2 @@
+- Zipcodes' latitude-longitude data from [boutell.com/zipcodes/](http://www.boutell.com/zipcodes/)
+- Median housing price data from [zillow.com/research/data/](http://www.zillow.com/research/data/)

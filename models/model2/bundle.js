@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var ANIMATION_RATE, LAT_RANGE, LNG_RANGE, Maps, MyModel, PRICE_RANGE, STDEV, Shapes, TURTLE_POP, TURTLE_SIZE, TURTLE_SPEED, TURTLE_VAR, TURTLE_WIGGLE, log, model, u,
+var ANIMATION_RATE, Maps, MyModel, PRICE_RANGE, STDEV, Shapes, TURTLE_POP, TURTLE_SIZE, TURTLE_SPEED, TURTLE_VAR, TURTLE_WIGGLE, log, model, u,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty;
 
@@ -15,9 +15,9 @@ log = function(arg) {
 
 TURTLE_POP = 3;
 
-TURTLE_SIZE = 1;
+TURTLE_SIZE = 0.3;
 
-TURTLE_SPEED = 10;
+TURTLE_SPEED = 0;
 
 TURTLE_VAR = 3;
 
@@ -27,11 +27,7 @@ PRICE_RANGE = [0, 255];
 
 STDEV = 40;
 
-ANIMATION_RATE = 1;
-
-LAT_RANGE = [20, 64];
-
-LNG_RANGE = [-159, -60];
+ANIMATION_RATE = 3;
 
 MyModel = (function(superClass) {
   extend(MyModel, superClass);
@@ -75,28 +71,32 @@ MyModel = (function(superClass) {
     return Math.floor(Math.random() * (_max - _min) + _min);
   };
 
+  MyModel.prototype.happiness_color = function(t) {
+    return ABM.Color.rgbaString(t.happiness, t.happiness, t.happiness);
+  };
+
   MyModel.prototype.price_color = function(p) {
     return Maps.randomGray(p.price, p.price);
   };
 
   MyModel.prototype.initialize_patch = function(p) {
-    p.desirability = -1;
-    p.price = Number.POSITIVE_INFINITY;
-    return p.color = '#A7D9F6';
+    p.desirability = this.new_desirability();
+    p.price = this.new_price(p);
+    return p.color = this.price_color(p);
   };
 
   MyModel.prototype.initialize_turtle = function(t) {
     var random_i;
     t.shape = 'person';
-    t.color = '#555555';
+    t.happiness = this.patch_utility(t.p);
+    t.color = this.happiness_color(t);
     t.penDown = true;
-    random_i = this.random_num(this.land_patches.length - 1);
-    this.land_patches[random_i].color = '#555';
-    return t.moveTo(this.land_patches[random_i]);
+    random_i = this.random_num(this.patches.length - 1);
+    return t.moveTo(this.patches[random_i]);
   };
 
   MyModel.prototype.setup = function() {
-    var j, k, l, len, len1, len2, p, patch, ref, ref1, results, t, zip;
+    var j, k, len, len1, p, ref, ref1, results, t;
     this.population = TURTLE_POP;
     this.size = TURTLE_SIZE;
     this.speed = TURTLE_SPEED;
@@ -110,20 +110,10 @@ MyModel = (function(superClass) {
       p = ref[j];
       this.initialize_patch(p);
     }
-    this.land_patches = [];
-    for (k = 0, len1 = zipcodes.length; k < len1; k++) {
-      zip = zipcodes[k];
-      patch = this.patches.patch(zip[3], zip[2]);
-      this.land_patches.push(patch);
-      patch.color = 'white';
-      patch.sizerank = zip[0];
-      patch.desirability = this.gaussian_approx(p.desirability - STDEV, p.desirability + STDEV);
-      patch.price = zip[1];
-    }
     ref1 = this.turtles.create(this.population);
     results = [];
-    for (l = 0, len2 = ref1.length; l < len2; l++) {
-      t = ref1[l];
+    for (k = 0, len1 = ref1.length; k < len1; k++) {
+      t = ref1[k];
       results.push(this.initialize_turtle(t));
     }
     return results;
@@ -155,29 +145,42 @@ MyModel = (function(superClass) {
   };
 
   MyModel.prototype.updateTurtle = function(t) {
-    var best_so_far, j, len, patch, ref;
-    best_so_far = t.p;
-    ref = this.land_patches;
+    var current_rent, j, len, patch, ref, results;
+    current_rent = t.p.price;
+    ref = t.p.inRadius(this.patches, 2);
+    results = [];
     for (j = 0, len = ref.length; j < len; j++) {
       patch = ref[j];
-      if (this.patch_utility(patch) > this.patch_utility(best_so_far)) {
-        best_so_far = patch;
+      log(t.happiness);
+      if (this.patch_utility(patch) > t.happiness) {
+        t.moveTo(patch);
+        t.happiness = this.patch_utility(patch);
+        t.color = this.happiness_color(t);
+        break;
+      } else {
+        results.push(void 0);
       }
     }
-    return t.moveTo(best_so_far);
+    return results;
   };
 
   MyModel.prototype.updatePatch = function(p) {
     var n_turtles;
-    return n_turtles = p.turtlesHere().length;
+    n_turtles = p.turtlesHere().length;
+    if (n_turtles > 0) {
+      return p.price += n_turtles;
+    } else {
+      return p.price -= 1;
+    }
   };
 
   MyModel.prototype.reportInfo = function() {
     var avgHeading, headings;
     headings = this.turtles.getProp("heading");
-    return avgHeading = (headings.reduce(function(a, b) {
+    avgHeading = (headings.reduce(function(a, b) {
       return a + b;
     })) / this.turtles.length;
+    return log("average heading of turtles: " + (avgHeading.toFixed(2)) + " radians, " + (u.radToDeg(avgHeading).toFixed(2)) + " degrees");
   };
 
   return MyModel;
@@ -186,11 +189,11 @@ MyModel = (function(superClass) {
 
 model = new MyModel({
   div: "layers",
-  size: 15,
-  minX: LNG_RANGE[0],
-  maxX: LNG_RANGE[1],
-  minY: LAT_RANGE[0],
-  maxY: LAT_RANGE[1],
+  size: 10,
+  minX: -30,
+  maxX: 30,
+  minY: -30,
+  maxY: 30,
   isTorus: false,
   hasNeighbors: false
 }).debug().start();
