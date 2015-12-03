@@ -13,7 +13,7 @@ log = function(arg) {
   return console.log(arg);
 };
 
-TURTLE_POP = 300;
+TURTLE_POP = 200;
 
 TURTLE_SIZE = 0.7;
 
@@ -23,15 +23,15 @@ STDEV = 40;
 
 ANIMATION_RATE = 8;
 
-STABILITY = 0.8;
+STABILITY = 0.9;
 
 NBR_RADIUS = 1;
 
-NBR_DISCOUNT = 2;
+NBR_DISCOUNT = 1;
 
-OVERPOP_COST = 2;
+OVERPOP_COST = 1;
 
-IDEAL_POP = 0;
+IDEAL_POP = 2;
 
 LAT_RANGE = [20, 64];
 
@@ -184,8 +184,7 @@ MyModel = (function(superClass) {
     nbr_patches = this.patches.inRadius(p, NBR_RADIUS);
     random_nbr_patch = nbr_patches[this.random_num(nbr_patches.length - 1)];
     p.desirability += random_nbr_patch.turtlesHere().length / (NBR_DISCOUNT * 1.0);
-    p.desirability += this.gaussian_approx(-10, 10);
-    return p.price = this.gaussian_approx(-10, 10);
+    return p.price = 0;
   };
 
   return MyModel;
@@ -194,7 +193,7 @@ MyModel = (function(superClass) {
 
 model = new MyModel({
   div: 'layers',
-  size: 17,
+  size: 14,
   minX: LNG_RANGE[0],
   maxX: LNG_RANGE[1],
   minY: LAT_RANGE[0],

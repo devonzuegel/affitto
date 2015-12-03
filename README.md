@@ -44,3 +44,7 @@ $ coffee -wc -o . *.coffee
 
 Our work relies heavily on [AgentScript](http://agentscript.org/), a minimalist Agent Based Modeling framework in Javascript/Coffescript based on NetLogo agent semantics. The framework has very thorough docs and modeling examples on their Github Pages site.
 
+## Data ##
+
+#### Origin of Data for Model 2 ####
+

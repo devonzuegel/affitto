@@ -1,16 +1,16 @@
 u = ABM.Util; Shapes = ABM.Shapes; Maps = ABM.ColorMaps
 log = (arg) -> console.log arg
 
-TURTLE_POP     = 300
+TURTLE_POP     = 200
 TURTLE_SIZE    = 0.7
 TURTLE_VAR     = 3
 STDEV          = 40
 ANIMATION_RATE = 8
-STABILITY      = 0.8
+STABILITY      = 0.9
 NBR_RADIUS     = 1
-NBR_DISCOUNT   = 2
-OVERPOP_COST   = 2
-IDEAL_POP      = 0
+NBR_DISCOUNT   = 1
+OVERPOP_COST   = 1
+IDEAL_POP      = 2
 
 # The following min/max values were found with the zipcode_map.rb script.
 LAT_RANGE      = [20, 64]
@@ -101,8 +101,8 @@ class MyModel extends ABM.Model
     random_nbr_patch = nbr_patches[@random_num(nbr_patches.length - 1)]
     p.desirability  += random_nbr_patch.turtlesHere().length / (NBR_DISCOUNT * 1.0)
 
-    p.desirability += @gaussian_approx(-10, 10)
-    p.price = @gaussian_approx(-10, 10)
+    # p.desirability += @gaussian_approx(-1, 1)
+    p.price = 0# @gaussian_approx(-1, 1)
 
 # Now that we've build our class, we call it with Model's
 # constructor arguments:
@@ -110,7 +110,7 @@ class MyModel extends ABM.Model
 #     isTorus = false, hasNeighbors = true
 model = new MyModel({
   div:          'layers',
-  size:         17,
+  size:         14,
 
   minX:         LNG_RANGE[0],
   maxX:         LNG_RANGE[1],
