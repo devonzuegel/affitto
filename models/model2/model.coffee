@@ -9,11 +9,11 @@ TURTLE_VAR     = 100      # Range of variance within turtle preferences.
 
 PRICE_VAR      = 10       # Range of variance within prices.
 
-NBR_RADIUS     = 5        # The radius (in #s of patches) in which to count neighbors.
+NBR_RADIUS     = 2        # The radius (in #s of patches) in which to count neighbors.
 
 NBR_COEFFIC    = 1        # How much to weight the number of neighbors.
 
-OVERPOP_COST   = 1000     # The coefficient that determines that importance of the number of turtles
+OVERPOP_COST   = 10000    # The coefficient that determines that importance of the number of turtles
                           # sharing a given patch.
 
 DIST_COST      = 100      # The coefficient on the cost of moving far (which is a logarithmic
@@ -23,14 +23,18 @@ PROB_RENT_CONTROL = 0.2   # The probability that a given patch's price is restri
 
 MAX_PRICE      = 100000   # The max price imposed by "rent control".
 
-DEFAULT_PRICE  = 188900   # We initialize our ABM map with . The data containing
+DEFAULT_PRICE  = 188900   # We initialize patches in our ABM map with the average home values of the
+                          # corresponding zip codes. The data contained some irregularities, resulting
+                          # in "infinity" for some of these prices. To smooth out these irregularities,
+                          # we replace these values with the average home value across the entire USA,
+                          # which happens to be $188,900.
 
 MAX_PATCH_POP  = 9        # Simulates height/density regulations (like those imposed in SF).
 
 IDEAL_POP      = 1        # The patch population at which the desirability of that patch is
                           # maximized. If it is above this value, the patch loses value
 
-STABILITY      = 0# 0.9894   # Each year, approximately 12% of American households move.
+STABILITY      = 0.9894   # Each year, approximately 12% of American households move.
                           # => census.gov/newsroom/press-releases/2015/cb15-47.html
 
 
@@ -40,8 +44,19 @@ LAT_RANGE      = [  20,  64]
 LNG_RANGE      = [-159, -60]
 
 class MyModel extends ABM.Model
-  set_animation_rate: (anim_rate) ->
-    @anim.setRate anim_rate, false
+  set_animation_rate: (anim_rate) ->    @anim.setRate anim_rate, false
+  set_price_var: (v) ->                 @price_var         = v
+  set_nbr_radius: (r) ->                @nbr_radius        = r
+  set_dist_cost_k: (c) ->               @dist_cost_k       = c
+  set_overpop_cost_k: (c) ->            @overpop_cost_k    = c
+  set_rent_control_prob: (prob) ->
+    @prob_rent_control = prob
+    @initialize_patch(p) for p in @patches
+  set_overpop_cost_k: (c) ->            @overpop_cost_k    = c
+  set_max_price: (p) ->                 @max_price         = p
+  set_max_patch_pop: (pop) ->           @max_patch_pop     = pop
+  set_ideal_pop: (pop) ->               @ideal_pop         = pop
+  set_stability: (s) ->                 @stability         = s
 
   gaussian_approx: (_min = 0, _max = 1) ->
     result       = 0
@@ -52,7 +67,7 @@ class MyModel extends ABM.Model
 
   distance_cost: (patch1, patch2) ->
     dist = Math.sqrt( (patch1.x - patch2.x)^2 + (patch1.y - patch2.y)^2 )
-    DIST_COST*Math.log(dist + 1)
+    @dist_cost_k * Math.log(dist + 1)
 
   set_population: (pop) ->
     change = pop - @population
@@ -63,11 +78,9 @@ class MyModel extends ABM.Model
     @population = pop
 
   patch_utility: (p, t) ->
-    n_turtles = p.turtlesHere().length
-    return NEGATIVE_INFINITY if n_turtles > MAX_PATCH_POP
     p.desirability - p.price - @distance_cost(p, t.p) + @random_num(-TURTLE_VAR, TURTLE_VAR)
 
-  shuffle_array: (array)       ->
+  shuffle_array: (array) ->
     for i in [0...array.length - 1]
       j        = Math.floor(Math.random() * (i + 1))
       temp     = array[i]
@@ -76,7 +89,7 @@ class MyModel extends ABM.Model
     array
 
   initialize_patch: (p) ->
-    p.rent_control = (Math.random() < PROB_RENT_CONTROL)
+    p.rent_control = (Math.random() < @prob_rent_control)
     p.desirability = Number.NEGATIVE_INFINITY
     p.price        = Number.POSITIVE_INFINITY
     p.color        = '#A7D9F6'  # blue colored "water"
@@ -87,7 +100,7 @@ class MyModel extends ABM.Model
     t.moveTo(@land_patches[random_i])
     t.color = if @land_patches[random_i].rent_control then 'orange' else 'white'
 
-  new_price: (p)               ->  Math.floor @gaussian_approx(p.desirability - PRICE_VAR, p.desirability + PRICE_VAR)
+  new_price: (p)               ->  Math.floor @gaussian_approx(p.desirability - @price_var, p.desirability + @price_var)
   random_num: (_max, _min = 0) ->  Math.floor(Math.random() * (_max - _min) + _min)
   unique_array: (a)            -> a.filter((item, pos) -> a.indexOf(item) == pos)
 
@@ -95,6 +108,15 @@ class MyModel extends ABM.Model
   setup: ->
     @set_population(TURTLE_POP)
     @set_animation_rate(ANIMATION_RATE)
+    @set_price_var(PRICE_VAR)
+    @set_nbr_radius(NBR_RADIUS)
+    @set_dist_cost_k(DIST_COST)
+    @set_overpop_cost_k(OVERPOP_COST)
+    @set_rent_control_prob(PROB_RENT_CONTROL)
+    @set_max_price(MAX_PRICE)
+    @set_max_patch_pop(MAX_PATCH_POP)
+    @set_ideal_pop(IDEAL_POP)
+    @set_stability(STABILITY)
 
     @turtles.setUseSprites()  # Convert turtle shape to bitmap for better performance.
     @turtles.setDefault 'size', TURTLE_SIZE
@@ -129,14 +151,17 @@ class MyModel extends ABM.Model
     $('#total-utility').text("Total utility = #{total_utility}")
 
   updateTurtle: (t) ->
-    return if (Math.random() < STABILITY)
+    return if (Math.random() < @stability)
     best_so_far         = t.p
     best_so_far_utility = @patch_utility(best_so_far, t)
     original_utility    = @patch_utility(t.p, t)
-1
+
     # Without shuffling, we get a bias towards east coast patches since they show up
     # later in the @land_patches array.
     for patch in @shuffle_array(@land_patches)
+      n_turtles = patch.turtlesHere().length
+      if n_turtles > @max_patch_pop
+        continue
       if (@patch_utility(patch, t) > best_so_far_utility)
         best_so_far         = patch
         best_so_far_utility = @patch_utility(best_so_far, t)
@@ -166,16 +191,16 @@ class MyModel extends ABM.Model
       current patch to next patch)
     ###
     n_turtles = p.turtlesHere().length
-    p.desirability = -OVERPOP_COST * Math.abs(IDEAL_POP - n_turtles)
+    p.desirability = -@overpop_cost_k * Math.abs(@ideal_pop - n_turtles)
 
-    nbr_patches      = @patches.inRadius(p, NBR_RADIUS)
+    nbr_patches      = @patches.inRadius(p, @nbr_radius)
     random_nbr_patch = nbr_patches[@random_num(nbr_patches.length - 1)]
     p.desirability  += random_nbr_patch.turtlesHere().length * NBR_COEFFIC
 
     # p.desirability += @gaussian_approx(-1, 1)
     p.price = DEFAULT_PRICE if p.price == Infinity
-    p.price = Math.max(0, p.price - OVERPOP_COST * (IDEAL_POP - n_turtles + @gaussian_approx(-PRICE_VAR, PRICE_VAR)))
-    p.price = Math.min(MAX_PRICE, p.price) if p.rent_control
+    p.price = Math.max(0, p.price - @overpop_cost_k * (@ideal_pop - n_turtles + @gaussian_approx(-@price_var, @price_var)))
+    p.price = Math.min(@max_price, p.price) if p.rent_control
 
     color   = Math.max(0, Math.min(150, Math.ceil(150 * p.price / (1000000.0))))  # TODO smooth out colors
     p.color = Maps.randomGray(color, color)
@@ -219,13 +244,83 @@ gui = new ABM.DatGUI(model, {
     setter: 'set_animation_rate'
   }
 
-  # 'Default Price': {
-  #   type: 'slider',
-  #   min: 10 * 1000,
-  #   max: 5 * 1000 * 1000,
-  #   step: 1,
-  #   val: DEFAULT_PRICE,
-  #   smooth: false,
-  #   setter: 'set_default_price'
-  # }
+  'Neighbor Radius': {
+    type: 'slider',
+    min: 1,
+    max: 50,
+    step: 1,
+    val: NBR_RADIUS,
+    smooth: false,
+    setter: 'set_nbr_radius'
+  }
+
+  'Distance Cost Coefficient': {
+    type: 'slider',
+    min: 1,
+    max: 300,
+    step: 1,
+    val: DIST_COST,
+    smooth: false,
+    setter: 'set_dist_cost_k'
+  }
+
+  'Overpopulation Cost Coefficient': {
+    type: 'slider',
+    min: 1,
+    max: 100 * 1000,
+    step: 1,
+    val: OVERPOP_COST,
+    smooth: false,
+    setter: 'set_overpop_cost_k'
+  }
+
+  '% of Properties Under Rent Control': {
+    type: 'slider',
+    min: 0,
+    max: 1,
+    step: 0.01,
+    val: PROB_RENT_CONTROL,
+    smooth: true,
+    setter: 'set_rent_control_prob'
+  }
+
+  'Rent Controlled Price': {
+    type: 'slider',
+    min: 0,
+    max: 1000000,
+    step: 0.01,
+    val: MAX_PRICE,
+    smooth: false,
+    setter: 'set_max_price'
+  }
+
+  'Max Density': {
+    type: 'slider',
+    min: 0,
+    max: 100,
+    step: 1,
+    val: MAX_PATCH_POP,
+    smooth: false,
+    setter: 'set_max_patch_pop'
+  }
+
+  'Ideal Population': {
+    type: 'slider',
+    min: 1,
+    max: 100,
+    step: 1,
+    val: IDEAL_POP,
+    smooth: false,
+    setter: 'set_ideal_pop'
+  }
+
+  'Stability': {
+    type: 'slider',
+    min: 0,
+    max: 1,
+    step: 0.00001,
+    val: STABILITY,
+    smooth: true,
+    setter: 'set_stability'
+  }
 })
