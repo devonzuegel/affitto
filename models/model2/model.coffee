@@ -1,18 +1,18 @@
 u = ABM.Util; Shapes = ABM.Shapes; Maps = ABM.ColorMaps
 log = (arg) -> console.log arg
 
-TURTLE_SIZE    = 0.7
-ANIMATION_RATE = 100
+TURTLE_SIZE    = 0.75
+ANIMATION_RATE = 5
 
 TURTLE_POP     = 200
-TURTLE_VAR     = 0
-PRICE_VAR      = 40
-STABILITY      = .8## 0.9894  # Each year, approximately 12% of American households move.
+TURTLE_VAR     = 10000
+PRICE_VAR      = 100
+STABILITY      = 0.9894  # Each year, approximately 12% of American households move.
                          # => census.gov/newsroom/press-releases/2015/cb15-47.html
-NBR_RADIUS     = 40
+NBR_RADIUS     = 3
 NBR_DISCOUNT   = 1
-OVERPOP_COST   = 1
-DIST_DISCOUNT  = 1
+OVERPOP_COST   = 400
+DIST_COST      = 10
 IDEAL_POP      = 2
 
 # The following min/max values were found with the zipcode_map.rb script.
@@ -27,6 +27,10 @@ class MyModel extends ABM.Model
       result += @random_num(_max, _min)
     return result / (1.0 * n_iterations)
 
+  distance_cost: (patch1, patch2) ->
+    dist = Math.sqrt( (patch1.x - patch2.x)^2 + (patch1.y - patch2.y)^2 )
+    DIST_COST*Math.log(dist + 1)
+
   set_population: (pop) ->
     change = pop - @population
     if change < 0
@@ -35,8 +39,8 @@ class MyModel extends ABM.Model
       @turtles.create(change, (t) => @initialize_turtle(t))
     @population = pop
 
-  patch_utility: (p) ->
-    p.desirability - p.price + @random_num(-TURTLE_VAR, TURTLE_VAR)
+  patch_utility: (p, t) ->
+    p.desirability - p.price - @distance_cost(p, t.p) + @random_num(-TURTLE_VAR, TURTLE_VAR)
 
   shuffle_array: (array)       ->
     for i in [0...array.length - 1]
@@ -53,7 +57,7 @@ class MyModel extends ABM.Model
 
   initialize_turtle: (t) ->
     t.shape  = 'person'
-    t.color  = '#555555'
+    t.color  = '#ffffff'
     random_i = @random_num(@land_patches.length - 1)
     t.moveTo(@land_patches[random_i])
 
@@ -88,17 +92,32 @@ class MyModel extends ABM.Model
     @updatePatch(p)  for p in @land_patches
     @updateTurtle(t) for t in @turtles
     @refreshPatches = true
-    # @anim.stop() if @anim.ticks == 300
+    # @anim.stop() if @anim.ticks == 3
 
   updateTurtle: (t) ->
     return if (Math.random() < STABILITY)
-    best_so_far = t.p
+    best_so_far         = t.p
+    best_so_far_utility = @patch_utility(best_so_far, t)
 
     # Without shuffling, we get a bias towards east coast patches since they show up
     # later in the @land_patches array.
     for patch in @shuffle_array(@land_patches)
-      best_so_far = patch if (@patch_utility(patch) > @patch_utility(best_so_far))
+      if (@patch_utility(patch, t) > best_so_far_utility)
+        best_so_far         = patch
+        best_so_far_utility = @patch_utility(best_so_far, t)
 
+    log "old: (#{t.p.x}, #{t.p.y})    utility = #{@patch_utility(t.p, t)}"
+    log "    p.desirability          =#{t.p.desirability}"
+    log "    -p.price                =#{-t.p.price}"
+    log "    -@distance_cost(p, t.p) =#{-@distance_cost(t.p, t.p)^DIST_COST}"
+
+    log "new: (#{best_so_far.x}, #{best_so_far.y})    utility = #{@patch_utility(best_so_far, t)}"
+    log "    p.desirability          =#{best_so_far.desirability}"
+    log "    -p.price                =#{-best_so_far.price}"
+    log "    -@distance_cost(p, t.p) =#{-@distance_cost(best_so_far, t.p)^DIST_COST}"
+
+    log '=> MOVED' unless @distance_cost(t.p, best_so_far) == 0
+    log ''
     t.moveTo(best_so_far)
 
   updatePatch: (p) ->   # p is patch
@@ -111,14 +130,24 @@ class MyModel extends ABM.Model
       current patch to next patch)
     ###
     n_turtles = p.turtlesHere().length
-    p.desirability = if (n_turtles > IDEAL_POP) then -OVERPOP_COST * n_turtles else n_turtles
+    p.desirability = if (n_turtles > IDEAL_POP) then -OVERPOP_COST*n_turtles else OVERPOP_COST*n_turtles
 
     nbr_patches      = @patches.inRadius(p, NBR_RADIUS)
     random_nbr_patch = nbr_patches[@random_num(nbr_patches.length - 1)]
     p.desirability  += random_nbr_patch.turtlesHere().length / (NBR_DISCOUNT * 1.0)
 
     # p.desirability += @gaussian_approx(-1, 1)
-    p.price = p.price + 10 * (1 - Math.sqrt(n_turtles))# @gaussian_approx(-1, 1)
+    p.price = 60000 if p.price == Infinity
+    p.price = p.price + 1000 * (n_turtles - IDEAL_POP) + @gaussian_approx(-1, 1)
+    color   = Math.max(0, Math.min(150, Math.ceil(150 * p.price / (1000000.0))))  # TODO smooth out colors
+
+    # log color
+    # log color
+    if n_turtles > 55
+      log n_turtles
+      log p.price
+    p.color = Maps.randomGray(color, color)
+
 
 # Now that we've build our class, we call it with Model's
 # constructor arguments:
