@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var ANIMATION_RATE, IDEAL_POP, LAT_RANGE, LNG_RANGE, Maps, MyModel, NBR_DISCOUNT, NBR_RADIUS, OVERPOP_COST, STABILITY, STDEV, Shapes, TURTLE_POP, TURTLE_SIZE, TURTLE_VAR, log, model, u,
+var ANIMATION_RATE, DIST_DISCOUNT, IDEAL_POP, LAT_RANGE, LNG_RANGE, Maps, MyModel, NBR_DISCOUNT, NBR_RADIUS, OVERPOP_COST, PRICE_VAR, STABILITY, Shapes, TURTLE_POP, TURTLE_SIZE, TURTLE_VAR, gui, log, model, u,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty;
 
@@ -13,23 +13,25 @@ log = function(arg) {
   return console.log(arg);
 };
 
-TURTLE_POP = 200;
-
 TURTLE_SIZE = 0.7;
 
-TURTLE_VAR = 3;
+ANIMATION_RATE = 100;
 
-STDEV = 40;
+TURTLE_POP = 200;
 
-ANIMATION_RATE = 8;
+TURTLE_VAR = 0;
 
-STABILITY = 0.9;
+PRICE_VAR = 40;
 
-NBR_RADIUS = 1;
+STABILITY = .8;
+
+NBR_RADIUS = 40;
 
 NBR_DISCOUNT = 1;
 
 OVERPOP_COST = 1;
+
+DIST_DISCOUNT = 1;
 
 IDEAL_POP = 2;
 
@@ -60,25 +62,28 @@ MyModel = (function(superClass) {
     return result / (1.0 * n_iterations);
   };
 
-  MyModel.prototype.new_price = function(p) {
-    return Math.floor(this.gaussian_approx(p.desirability - STDEV, p.desirability + STDEV));
+  MyModel.prototype.set_population = function(pop) {
+    var change, k, len, ref, t;
+    change = pop - this.population;
+    if (change < 0) {
+      ref = this.turtles.nOf(-change);
+      for (k = 0, len = ref.length; k < len; k++) {
+        t = ref[k];
+        t.die();
+      }
+    }
+    if (change > 0) {
+      this.turtles.create(change, (function(_this) {
+        return function(t) {
+          return _this.initialize_turtle(t);
+        };
+      })(this));
+    }
+    return this.population = pop;
   };
 
   MyModel.prototype.patch_utility = function(p) {
     return p.desirability - p.price + this.random_num(-TURTLE_VAR, TURTLE_VAR);
-  };
-
-  MyModel.prototype.random_num = function(_max, _min) {
-    if (_min == null) {
-      _min = 0;
-    }
-    return Math.floor(Math.random() * (_max - _min) + _min);
-  };
-
-  MyModel.prototype.unique_array = function(a) {
-    return a.filter(function(item, pos) {
-      return a.indexOf(item) === pos;
-    });
   };
 
   MyModel.prototype.shuffle_array = function(array) {
@@ -106,9 +111,26 @@ MyModel = (function(superClass) {
     return t.moveTo(this.land_patches[random_i]);
   };
 
+  MyModel.prototype.new_price = function(p) {
+    return Math.floor(this.gaussian_approx(p.desirability - PRICE_VAR, p.desirability + PRICE_VAR));
+  };
+
+  MyModel.prototype.random_num = function(_max, _min) {
+    if (_min == null) {
+      _min = 0;
+    }
+    return Math.floor(Math.random() * (_max - _min) + _min);
+  };
+
+  MyModel.prototype.unique_array = function(a) {
+    return a.filter(function(item, pos) {
+      return a.indexOf(item) === pos;
+    });
+  };
+
   MyModel.prototype.setup = function() {
     var k, l, len, len1, p, patch, ref, zip;
-    this.population = TURTLE_POP;
+    this.set_population(TURTLE_POP);
     this.size = TURTLE_SIZE;
     this.turtles.setUseSprites();
     this.turtles.setDefault('size', this.size);
@@ -125,11 +147,10 @@ MyModel = (function(superClass) {
       this.land_patches.push(patch);
       patch.color = 'white';
       patch.sizerank = zip[0];
-      patch.desirability = this.gaussian_approx(p.desirability - STDEV, p.desirability + STDEV);
       patch.price = zip[1];
+      patch.desirability = this.gaussian_approx(p.price - PRICE_VAR, p.price + PRICE_VAR);
     }
     this.land_patches = this.unique_array(this.land_patches);
-    log(this.land_patches.length);
     return this.turtles.create(this.population, (function(_this) {
       return function(t) {
         return _this.initialize_turtle(t);
@@ -180,11 +201,11 @@ MyModel = (function(superClass) {
      */
     var n_turtles, nbr_patches, random_nbr_patch;
     n_turtles = p.turtlesHere().length;
-    p.desirability = n_turtles > IDEAL_POP ? -OVERPOP_COST * n_turtles : n_turtles + 10;
+    p.desirability = n_turtles > IDEAL_POP ? -OVERPOP_COST * n_turtles : n_turtles;
     nbr_patches = this.patches.inRadius(p, NBR_RADIUS);
     random_nbr_patch = nbr_patches[this.random_num(nbr_patches.length - 1)];
     p.desirability += random_nbr_patch.turtlesHere().length / (NBR_DISCOUNT * 1.0);
-    return p.price = 0;
+    return p.price = p.price + 10 * (1 - Math.sqrt(n_turtles));
   };
 
   return MyModel;
@@ -201,6 +222,18 @@ model = new MyModel({
   isTorus: false,
   hasNeighbors: false
 }).debug().start();
+
+gui = new ABM.DatGUI(model, {
+  'population': {
+    type: 'slider',
+    min: 0,
+    max: 1000,
+    step: 1,
+    val: TURTLE_POP,
+    smooth: false,
+    setter: 'set_population'
+  }
+});
 
 
 },{}]},{},[1]);
