@@ -2,7 +2,7 @@ u = ABM.Util; Shapes = ABM.Shapes; Maps = ABM.ColorMaps
 log = (arg) -> console.log arg
 
 TURTLE_SIZE    = 0.75
-ANIMATION_RATE = 5
+ANIMATION_RATE = 1
 
 TURTLE_POP     = 200
 TURTLE_VAR     = 10000
@@ -79,9 +79,10 @@ class MyModel extends ABM.Model
     for zip in zipcodes
       patch = @patches.patch(zip[3], zip[2])
       @land_patches.push(patch)
-      patch.color = 'white'
       patch.sizerank = zip[0]
       patch.price = zip[1]
+      color   = Math.max(0, Math.min(150, Math.ceil(150 * p.price / (1000000.0))))  # TODO smooth out colors
+      p.color = Maps.randomGray(color, color)
       patch.desirability = @gaussian_approx(p.price - PRICE_VAR, p.price + PRICE_VAR)
     @land_patches = @unique_array(@land_patches)
     @turtles.create(@population, (t) => @initialize_turtle(t))  # Create `population` # of turtles.
@@ -89,10 +90,10 @@ class MyModel extends ABM.Model
   # Update our model via the second abstract method, `step` (called by Model.animate).
   step: ->
     # log @anim.ticks
+    @anim.stop()# if @anim.ticks == 3
     @updatePatch(p)  for p in @land_patches
     @updateTurtle(t) for t in @turtles
     @refreshPatches = true
-    # @anim.stop() if @anim.ticks == 3
 
   updateTurtle: (t) ->
     return if (Math.random() < STABILITY)
@@ -139,13 +140,13 @@ class MyModel extends ABM.Model
     # p.desirability += @gaussian_approx(-1, 1)
     p.price = 60000 if p.price == Infinity
     p.price = p.price + 1000 * (n_turtles - IDEAL_POP) + @gaussian_approx(-1, 1)
-    color   = Math.max(0, Math.min(150, Math.ceil(150 * p.price / (1000000.0))))  # TODO smooth out colors
 
     # log color
     # log color
     if n_turtles > 55
       log n_turtles
       log p.price
+    color   = Math.max(0, Math.min(150, Math.ceil(150 * p.price / (1000000.0))))  # TODO smooth out colors
     p.color = Maps.randomGray(color, color)
 
 
