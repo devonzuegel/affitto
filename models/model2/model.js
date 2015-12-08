@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var ANIMATION_RATE, DEFAULT_PRICE, DIST_COST, IDEAL_POP, LAT_RANGE, LNG_RANGE, MAX_PATCH_POP, MAX_PRICE, Maps, MyModel, NBR_COEFFIC, NBR_RADIUS, OVERPOP_COST, PRICE_VAR, PROB_RENT_CONTROL, STABILITY, Shapes, TURTLE_POP, TURTLE_SIZE, TURTLE_VAR, gui, log, model, u,
+var ANIMATION_RATE, DEFAULT_PRICE, DIST_COST, IDEAL_POP, LAT_RANGE, LNG_RANGE, MAX_PATCH_POP, MAX_PRICE, Maps, MyModel, NBR_COEFFIC, NBR_RADIUS, NUM_TICKS, OVERPOP_COST, PRICE_VAR, PROB_RENT_CONTROL, STABILITY, Shapes, TURTLE_POP, TURTLE_SIZE, TURTLE_VAR, gui, log, model, u,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty;
 
@@ -17,7 +17,7 @@ TURTLE_SIZE = 0.75;
 
 ANIMATION_RATE = 100;
 
-TURTLE_POP = 200;
+TURTLE_POP = 1000;
 
 TURTLE_VAR = 100;
 
@@ -33,9 +33,9 @@ DIST_COST = 100;
 
 PROB_RENT_CONTROL = 0.2;
 
-MAX_PRICE = 100000;
-
 DEFAULT_PRICE = 188900;
+
+MAX_PRICE = DEFAULT_PRICE;
 
 MAX_PATCH_POP = 9;
 
@@ -46,6 +46,8 @@ STABILITY = 0.9894;
 LAT_RANGE = [20, 64];
 
 LNG_RANGE = [-159, -60];
+
+NUM_TICKS = 10000;
 
 MyModel = (function(superClass) {
   extend(MyModel, superClass);
@@ -104,6 +106,10 @@ MyModel = (function(superClass) {
 
   MyModel.prototype.set_stability = function(s) {
     return this.stability = s;
+  };
+
+  MyModel.prototype.coords_key_from_patch = function(patch) {
+    return patch.x + "," + patch.y;
   };
 
   MyModel.prototype.gaussian_approx = function(_min, _max) {
@@ -196,7 +202,7 @@ MyModel = (function(superClass) {
   };
 
   MyModel.prototype.setup = function() {
-    var color, k, l, len, len1, p, patch, ref, zip;
+    var color, coords, id, k, l, len, len1, len2, m, p, patch, ref, ref1, results, zip;
     this.set_population(TURTLE_POP);
     this.set_animation_rate(ANIMATION_RATE);
     this.set_price_var(PRICE_VAR);
@@ -219,31 +225,58 @@ MyModel = (function(superClass) {
     for (l = 0, len1 = zipcodes.length; l < len1; l++) {
       zip = zipcodes[l];
       patch = this.patches.patch(zip[3], zip[2]);
-      this.land_patches.push(patch);
       patch.sizerank = zip[0];
       patch.price = zip[1];
       color = Math.max(0, Math.min(150, Math.ceil(150 * p.price / 1000000.0)));
       p.color = Maps.randomGray(color, color);
       patch.desirability = 0;
+      this.land_patches.push(patch);
     }
     this.land_patches = this.unique_array(this.land_patches);
-    return this.turtles.create(this.population, (function(_this) {
+    this.turtles.create(this.population, (function(_this) {
       return function(t) {
         return _this.initialize_turtle(t);
       };
     })(this));
+    this.edges = [];
+    this.nodes = {};
+    this.node_ids = {};
+    id = 0;
+    ref1 = this.land_patches;
+    results = [];
+    for (m = 0, len2 = ref1.length; m < len2; m++) {
+      patch = ref1[m];
+      coords = this.coords_key_from_patch(patch);
+      this.node_ids[coords] = id;
+      results.push(id += 1);
+    }
+    return results;
   };
 
   MyModel.prototype.step = function() {
-    var k, l, len, len1, old_this, p, ref, ref1, t, total_utility;
-    ref = this.land_patches;
-    for (k = 0, len = ref.length; k < len; k++) {
-      p = ref[k];
+    var coords, id, k, l, len, len1, len2, m, old_this, p, patch, ref, ref1, ref2, t, total_utility;
+    if (this.anim.ticks === NUM_TICKS) {
+      this.anim.stop();
+      id = 0;
+      ref = this.land_patches;
+      for (k = 0, len = ref.length; k < len; k++) {
+        patch = ref[k];
+        coords = this.coords_key_from_patch(patch);
+        this.nodes[coords] = [id, patch.turtlesHere().length, patch.x, patch.y];
+        id += 1;
+      }
+      log(JSON.stringify(this.nodes));
+      log(JSON.stringify(this.edges));
+      return;
+    }
+    ref1 = this.land_patches;
+    for (l = 0, len1 = ref1.length; l < len1; l++) {
+      p = ref1[l];
       this.updatePatch(p);
     }
-    ref1 = this.turtles;
-    for (l = 0, len1 = ref1.length; l < len1; l++) {
-      t = ref1[l];
+    ref2 = this.turtles;
+    for (m = 0, len2 = ref2.length; m < len2; m++) {
+      t = ref2[m];
       this.updateTurtle(t);
     }
     this.refreshPatches = true;
@@ -257,7 +290,7 @@ MyModel = (function(superClass) {
   };
 
   MyModel.prototype.updateTurtle = function(t) {
-    var best_so_far, best_so_far_utility, k, len, n_turtles, original_utility, patch, ref;
+    var best_so_far, best_so_far_utility, k, len, n_turtles, new_patch_id, old_patch_id, original_utility, patch, ref;
     if (Math.random() < this.stability) {
       return;
     }
@@ -277,7 +310,12 @@ MyModel = (function(superClass) {
       }
     }
     t.color = best_so_far.rent_control ? 'orange' : 'white';
-    return t.moveTo(best_so_far);
+    if (best_so_far !== t.p) {
+      old_patch_id = this.node_ids[this.coords_key_from_patch(t.p)];
+      new_patch_id = this.node_ids[this.coords_key_from_patch(best_so_far)];
+      this.edges.push([old_patch_id, new_patch_id]);
+      return t.moveTo(best_so_far);
+    }
   };
 
   MyModel.prototype.updatePatch = function(p) {

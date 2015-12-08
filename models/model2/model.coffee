@@ -21,13 +21,14 @@ DIST_COST      = 100      # The coefficient on the cost of moving far (which is 
 
 PROB_RENT_CONTROL = 0.2   # The probability that a given patch's price is restricted by rent-control.
 
-MAX_PRICE      = 100000   # The max price imposed by "rent control".
-
 DEFAULT_PRICE  = 188900   # We initialize patches in our ABM map with the average home values of the
                           # corresponding zip codes. The data contained some irregularities, resulting
                           # in "infinity" for some of these prices. To smooth out these irregularities,
                           # we replace these values with the average home value across the entire USA,
                           # which happens to be $188,900.
+
+MAX_PRICE      = 1000000000000000   # The max price imposed by "rent control". This will start at the median
+                                 # American home price.
 
 MAX_PATCH_POP  = 9        # Simulates height/density regulations (like those imposed in SF).
 
@@ -43,6 +44,8 @@ STABILITY      = 0.9894   # Each year, approximately 12% of American households 
 LAT_RANGE      = [  20,  64]
 LNG_RANGE      = [-159, -60]
 
+NUM_TICKS      = 10000   # Stop after NUM_TICKS ticks
+
 class MyModel extends ABM.Model
   set_animation_rate: (anim_rate) ->    @anim.setRate anim_rate, false
   set_price_var: (v) ->                 @price_var         = v
@@ -57,6 +60,7 @@ class MyModel extends ABM.Model
   set_max_patch_pop: (pop) ->           @max_patch_pop     = pop
   set_ideal_pop: (pop) ->               @ideal_pop         = pop
   set_stability: (s) ->                 @stability         = s
+  coords_key_from_patch: (patch) ->     "#{patch.x},#{patch.y}"
 
   gaussian_approx: (_min = 0, _max = 1) ->
     result       = 0
@@ -124,20 +128,40 @@ class MyModel extends ABM.Model
     @initialize_patch(p) for p in @patches
     @land_patches = []
     for zip in zipcodes
-      patch = @patches.patch(zip[3], zip[2])
-      @land_patches.push(patch)
-      patch.sizerank = zip[0]
-      patch.price = zip[1]
-      color   = Math.max(0, Math.min(150, Math.ceil(150 * p.price / (1000000.0))))  # TODO smooth out colors
-      p.color = Maps.randomGray(color, color)
+      patch              = @patches.patch(zip[3], zip[2])
+      patch.sizerank     = zip[0]
+      patch.price        = zip[1]
+      color              = Math.max(0, Math.min(150, Math.ceil(150 * p.price / (1000000.0))))  # TODO smooth out colors
+      p.color            = Maps.randomGray(color, color)
       patch.desirability = 0
-    @land_patches = @unique_array(@land_patches)
+      @land_patches.push(patch)
+    @land_patches        = @unique_array(@land_patches)
     @turtles.create(@population, (t) => @initialize_turtle(t))  # Create `population` # of turtles.
+
+    @edges    = []
+    @nodes    = {}
+    @node_ids = {}
+    id = 0
+    for patch in @land_patches
+      coords = @coords_key_from_patch(patch)
+      @node_ids[coords] = id
+      id += 1
 
   # Update our model via the second abstract method, `step` (called by Model.animate).
   step: ->
-    # log @anim.ticks
-    # @anim.stop()# if @anim.ticks == 3
+    if @anim.ticks == NUM_TICKS
+      @anim.stop()
+
+      id = 0
+      for patch in @land_patches
+        coords = @coords_key_from_patch(patch)
+        @nodes[coords] = [id, patch.turtlesHere().length, patch.x, patch.y]
+        id += 1
+
+      log JSON.stringify(@nodes)
+      log JSON.stringify(@edges)
+      return
+
     @updatePatch(p)  for p in @land_patches
     @updateTurtle(t) for t in @turtles
     @refreshPatches = true
@@ -179,7 +203,11 @@ class MyModel extends ABM.Model
     # log '=> MOVED' unless @distance_cost(t.p, best_so_far) == 0
     # log ''
     t.color = if best_so_far.rent_control then 'orange' else 'white'
-    t.moveTo(best_so_far)
+    if best_so_far != t.p
+      old_patch_id = @node_ids[@coords_key_from_patch(t.p)]
+      new_patch_id = @node_ids[@coords_key_from_patch(best_so_far)]
+      @edges.push([old_patch_id, new_patch_id])
+      t.moveTo(best_so_far)
 
   updatePatch: (p) ->   # p is patch
     ### TODO: things to incoprorate:

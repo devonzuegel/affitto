@@ -1,0 +1,6 @@
+nodedef>name,num_turtles INT,lat INT,long INT
+0,3,-83,33
+
+edgedef>node1,node2,weight DOUBLE
+477,32,1
+1,2,1
