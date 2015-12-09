@@ -55,10 +55,50 @@ We built our model off a highly-customizable ABM framework called [*AgentScript*
 
 We represented the United States as a grid, where each patch is a single squared latitude-longitude degree initialized with the median home price of that zipcode. The data on these median home prices are from [Zillow](http://www.zillow.com/research/data/) and the zipcode latitude-longitude data are from [Boutell](http://www.boutell.com/zipcodes/). The darker the patch, the cheaper it is, while very light squares indicate a high home price.
 
-The tenants (symbolized by the little stick figures) were initialized in random positions on the land patches. Tenants are orange when they are on rent-controlled patches; otherwise they are painted white.
+We determined the cost and desirability of living on a given patch according to the following rules:
+
+- `patch.desirability` is the sum of the following components:
+    + The difference between the ideal population `@ideal_pop` and the actual population `p.turtlesHere().length` of that patch multiplied by the overpopulation cost constant `@overpop_cost_k` times `-1`.
+    + The number of turtles of a random patch within the neighbor radius `random_nbr_patch.turtlesHere().length` times the neighbor coefficient `NBR_COEFFIC`.
+- `patch.price` is determined by the following rules:
+    + It is the sum of the following components:
+        * The price at last tick `p.price`
+        * `-1` times the overpopulation cost `@overpop_cost` times the difference between the ideal population `@ideal_pop` plus a random variable within the `+/-` range of the defined price variance `@price_var`.
+    + The price cannot drop below `0`.
+    + If the patch is governed by rent control, the price cannot go above the maximum price `@max_price`.
+
+Here is the relevant Coffeescript snippet that encodes these rules into the model:
 
 ```coffee
-TURTLE_POP     = 1000
+n_turtles = p.turtlesHere().length
+p.desirability = -@overpop_cost_k * Math.abs(@ideal_pop - n_turtles)
+
+nbr_patches      = @patches.inRadius(p, @nbr_radius)
+random_nbr_patch = nbr_patches[@random_num(nbr_patches.length - 1)]
+p.desirability  += random_nbr_patch.turtlesHere().length * NBR_COEFFIC
+
+p.price = Math.max(0, p.price - @overpop_cost_k * (@ideal_pop - n_turtles + @gaussian_approx(-@price_var, @price_var)))
+p.price = Math.min(@max_price, p.price) if p.rent_control
+```
+
+The tenants (symbolized by the little stick figures) were initialized in random positions on the land patches. Tenants are orange when they are on rent-controlled patches; otherwise they are painted white. We determined their happiness or "utility" for being on any particular patch as a function of that patch. In particular, it is a sum of the following components:
+
+- The desirability of that particular patch.
+- `-1` times the price of that particular patch.
+- A random variable within the `+/-` range of the defined turtle variance `@turtle_var`, which represents the variation of humans' preferences in the real world.
+
+Here is the relevant Coffeescript snippet that encodes these rules into the model:
+
+
+```coffee
+patch_utility: (p, t) ->
+    p.desirability - p.price - @distance_cost(p, t.p) + @random_num(-TURTLE_VAR, TURTLE_VAR)
+```
+
+The model relied on a wide set of parameters. You can find the full list below, including explanations of the role each one plays in our model:
+
+```coffee
+TURTLE_POP     = 200      # The number of turtles (tenants) in the model.
 
 TURTLE_VAR     = 100      # Range of variance within turtle preferences.
 
@@ -73,8 +113,6 @@ OVERPOP_COST   = 10000    # The coefficient that determines that importance of t
 
 DIST_COST      = 100      # The coefficient on the cost of moving far (which is a logarithmic
                           # function on the distance of the move).
-
-PROB_RENT_CONTROL = 0#.2   # The probability that a given patch's price is restricted by rent-control.
 
 DEFAULT_PRICE  = 188900   # We initialize patches in our ABM map with the average home values of the
                           # corresponding zip codes. The data contained some irregularities, resulting
@@ -92,32 +130,9 @@ IDEAL_POP      = 3        # The patch population at which the desirability of th
 
 STABILITY      = 0.9894   # Each year, approximately 12% of American households move.
                           # => census.gov/newsroom/press-releases/2015/cb15-47.html
+
+PROB_RENT_CONTROL = 0.2   # The probability that a given patch's price is restricted by rent-control.
 ```
-
-We initialized
-
-## Initialization ##
-
-We found several data sources across United States cities, taking advantage of recently-launched Open Data programs across the United States that provide datasets that are well-suited to fit an agent-based model for apartment rents. 
-
-Datasets we ended up actually using:
-
-- zipcode data (lat-long of each zipcode)
-- median house value by zipcode
-- ... then we incorporated these into the initialized values for the ABM
-
-> TODOOOOOOOO
-
-
-to simulate the behavior of rational actors in a rental market based on a number of factors including zoning laws, school districts, friendships, income (randomized), and rent prices. We represent the city as a grid, where each cell can take a certain number of tenants, and renters must choose where to go based on a number of parameters. We will run thousands of simulations automatically, and then perform analysis using algorithms taught in class to generalize our observations about rental behaviors.
-
-We have a heuristic utility function for both the renter and the landlord to represent their optimal positions that determine each step of the agent-based model to reach equilibrium:
-
-
-`patch_price = _________________``
-tenant_utility_fn = _______`
-
-This is a screenshot from our current model using AgentScript, using 3 renters as “turtles” in the agent-based model, where brightness represents rental price (dark is cheap):
 
 ## Results & Findings ##
 

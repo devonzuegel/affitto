@@ -3,7 +3,7 @@ log = (arg) -> console.log arg
 
 TURTLE_SIZE    = 0.75
 ANIMATION_RATE = 100
-TURTLE_POP     = 1000
+TURTLE_POP     = 1000     # The number of turtles (tenants) in the model.
 
 TURTLE_VAR     = 100      # Range of variance within turtle preferences.
 
@@ -19,7 +19,7 @@ OVERPOP_COST   = 10000    # The coefficient that determines that importance of t
 DIST_COST      = 100      # The coefficient on the cost of moving far (which is a logarithmic
                           # function on the distance of the move).
 
-PROB_RENT_CONTROL = 0#.2   # The probability that a given patch's price is restricted by rent-control.
+PROB_RENT_CONTROL = 0.2   # The probability that a given patch's price is restricted by rent-control.
 
 DEFAULT_PRICE  = 188900   # We initialize patches in our ABM map with the average home values of the
                           # corresponding zip codes. The data contained some irregularities, resulting
@@ -104,7 +104,6 @@ class MyModel extends ABM.Model
     t.moveTo(@land_patches[random_i])
     t.color = if @land_patches[random_i].rent_control then 'orange' else 'white'
 
-  new_price: (p)               ->  Math.floor @gaussian_approx(p.desirability - @price_var, p.desirability + @price_var)
   random_num: (_max, _min = 0) ->  Math.floor(Math.random() * (_max - _min) + _min)
   unique_array: (a)            -> a.filter((item, pos) -> a.indexOf(item) == pos)
 
@@ -225,7 +224,6 @@ class MyModel extends ABM.Model
     random_nbr_patch = nbr_patches[@random_num(nbr_patches.length - 1)]
     p.desirability  += random_nbr_patch.turtlesHere().length * NBR_COEFFIC
 
-    # p.desirability += @gaussian_approx(-1, 1)
     p.price = DEFAULT_PRICE if p.price == Infinity
     p.price = Math.max(0, p.price - @overpop_cost_k * (@ideal_pop - n_turtles + @gaussian_approx(-@price_var, @price_var)))
     p.price = Math.min(@max_price, p.price) if p.rent_control
