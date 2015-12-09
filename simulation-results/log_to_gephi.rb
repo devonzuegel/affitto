@@ -1,7 +1,8 @@
 require 'json'
 require 'awesome_print'
 
-FILENAMES = %w(test) # %w(1-pop-200-with-rent-control 2-pop-200-without-rent-control)
+FILENAMES = %w(4-pop-1000-without-rent-control)
+           #%w(1-pop-200-with-rent-control 2-pop-1000-with-rent-control 3-pop-200-without-rent-control)
 
 def log_filename(name)
   "#{name}.log"

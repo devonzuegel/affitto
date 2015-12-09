@@ -3,7 +3,7 @@ log = (arg) -> console.log arg
 
 TURTLE_SIZE    = 0.75
 ANIMATION_RATE = 100
-TURTLE_POP     = 200
+TURTLE_POP     = 1000
 
 TURTLE_VAR     = 100      # Range of variance within turtle preferences.
 
@@ -19,7 +19,7 @@ OVERPOP_COST   = 10000    # The coefficient that determines that importance of t
 DIST_COST      = 100      # The coefficient on the cost of moving far (which is a logarithmic
                           # function on the distance of the move).
 
-PROB_RENT_CONTROL = 0.2   # The probability that a given patch's price is restricted by rent-control.
+PROB_RENT_CONTROL = 0#.2   # The probability that a given patch's price is restricted by rent-control.
 
 DEFAULT_PRICE  = 188900   # We initialize patches in our ABM map with the average home values of the
                           # corresponding zip codes. The data contained some irregularities, resulting
@@ -27,12 +27,12 @@ DEFAULT_PRICE  = 188900   # We initialize patches in our ABM map with the averag
                           # we replace these values with the average home value across the entire USA,
                           # which happens to be $188,900.
 
-MAX_PRICE      = 1000000000000000   # The max price imposed by "rent control". This will start at the median
-                                 # American home price.
+MAX_PRICE      = 1000000  # The max price imposed by "rent control". This will start at the median
+                          # American home price.
 
 MAX_PATCH_POP  = 9        # Simulates height/density regulations (like those imposed in SF).
 
-IDEAL_POP      = 1        # The patch population at which the desirability of that patch is
+IDEAL_POP      = 3        # The patch population at which the desirability of that patch is
                           # maximized. If it is above this value, the patch loses value
 
 STABILITY      = 0.9894   # Each year, approximately 12% of American households move.
