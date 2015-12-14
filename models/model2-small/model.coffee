@@ -238,7 +238,7 @@ class MyModel extends ABM.Model
 #     isTorus = false, hasNeighbors = true
 model = new MyModel({
   div:          'layers',
-  size:         7,
+  size:         8,
   minX:         LNG_RANGE[0],
   maxX:         LNG_RANGE[1],
   minY:         LAT_RANGE[0],
