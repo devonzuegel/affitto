@@ -17,7 +17,7 @@ TURTLE_SIZE = 0.75;
 
 ANIMATION_RATE = 100;
 
-TURTLE_POP = 200;
+TURTLE_POP = 800;
 
 TURTLE_VAR = 100;
 
@@ -31,7 +31,7 @@ OVERPOP_COST = 10000;
 
 DIST_COST = 100;
 
-PROB_RENT_CONTROL = 0;
+PROB_RENT_CONTROL = 0.2;
 
 DEFAULT_PRICE = 188900;
 
@@ -39,7 +39,7 @@ MAX_PRICE = 1000000;
 
 MAX_PATCH_POP = 9;
 
-IDEAL_POP = 1;
+IDEAL_POP = 3;
 
 STABILITY = 0.9894;
 
@@ -184,10 +184,6 @@ MyModel = (function(superClass) {
     return t.color = this.land_patches[random_i].rent_control ? 'orange' : 'white';
   };
 
-  MyModel.prototype.new_price = function(p) {
-    return Math.floor(this.gaussian_approx(p.desirability - this.price_var, p.desirability + this.price_var));
-  };
-
   MyModel.prototype.random_num = function(_max, _min) {
     if (_min == null) {
       _min = 0;
@@ -254,7 +250,7 @@ MyModel = (function(superClass) {
   };
 
   MyModel.prototype.step = function() {
-    var coords, id, k, l, len, len1, len2, m, old_this, p, patch, ref, ref1, ref2, t, total_utility;
+    var coords, id, k, l, len, len1, len2, m, old_this, p, patch, ref, ref1, ref2, t;
     if (this.anim.ticks === NUM_TICKS) {
       this.anim.stop();
       id = 0;
@@ -280,13 +276,7 @@ MyModel = (function(superClass) {
       this.updateTurtle(t);
     }
     this.refreshPatches = true;
-    old_this = this;
-    total_utility = (this.turtles.map(function(t) {
-      return old_this.patch_utility(t.p, t);
-    })).reduce(function(a, b) {
-      return a + b;
-    });
-    return $('#total-utility').text("Total utility = " + total_utility);
+    return old_this = this;
   };
 
   MyModel.prototype.updateTurtle = function(t) {
@@ -351,7 +341,7 @@ MyModel = (function(superClass) {
 
 model = new MyModel({
   div: 'layers',
-  size: 15,
+  size: 7,
   minX: LNG_RANGE[0],
   maxX: LNG_RANGE[1],
   minY: LAT_RANGE[0],

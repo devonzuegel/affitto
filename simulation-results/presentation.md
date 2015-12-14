@@ -1,0 +1,15 @@
+Our initial motivation for this project was our interest in the forces at play in the San Francisco housing market. During preliminary research, we found that policymakers and communities lack tools to model the complex interactions of thousands of individuals simultaneously making decisions. Economics provides a useful basic explanation for how individuals make decisions on the day-to-day level, but any emergent phenomena resulting from these simultaneous decisions can be very difficult to predict.
+
+Our work aims to provide a tool for policymakers and stakeholders to better understand these interactions that in aggregate comprise the housing market. To do so, we built an agent-based model to simulate the interactions of tenants and landlords.
+
+We represented the United States as a grid, where each patch is a single squared latitude-longitude degree initialized with the median home price of that zipcode. The data on these median home prices are from Zillow and the zipcode latitude-longitude data are from Boutell. The darker the patch, the cheaper it is, while very light squares indicate a high home price.
+
+The rules for cost and desirability of living on a given patch were a little complicated. Generally, patches became more expensive as more turtles opted to live on it. Meanwhile, their desirability went up as the number of neighbor turtles on patches surrounding that patch went up, and it went down if there was overcrowding of the number of turtles on that specific patch.
+
+The tenants (symbolized by the little stick figures) were initialized in random positions on the land patches. Tenants are orange when they are on rent-controlled patches; otherwise they are painted white. We determined their happiness or “utility” for being on any particular patch as a function of the price and desirability that patch. We also added some minor variance into the utility function to represent slight differences in preference among tenants in the real housing market.
+
+We ran the simulation with four different settings: (1) 200 turtles without rent control, (2) 1000 turtles without rent control, (3) 200 turtles with rent control, and (4) 1000 turtles with rent control.
+
+After several thousand iterations, the general population began migrating towards the east coast and south, and away from the northwest. Our explanation is that once a region has a sparse population, it becomes unat- tractive to prospective renters given the value of a basic level of community required to sustain living.
+
+We also see similar degree distributions for the two graphs with no rent control; similarly, the degree distributions for the simulations with rent control look roughly similar, each having two tails. When rent control is in place, there is a sharp peak at a relatively low degree and a lesser peak at a high degree. We posit that this a direct result of the preference towards staying in rent-controlled areas, and the reluctance to leave them. In the distribution with- out rent control, on the other hands, the degree is approximately normally distributed which suggests that there is not a strong preference towards a specific type of housing.

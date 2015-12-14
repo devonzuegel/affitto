@@ -1,0 +1,23 @@
+<html>
+  <head>
+    <title>Test Model</title>
+    <script src="../lib/agentscript.js"></script>
+    <script src="../lib/dat.gui.min.js"></script>
+    <script src="../lib/as.dat.gui.js"></script>
+    <script src="../lib/mouse.js"></script>
+    <script src="../tools/jquery-1.10.2.min.js"></script>
+
+    <!-- Cross Origin fail when using "file:" protocol -->
+    <!--
+      <script src="../../tools/coffee-script.js"></script>
+      <script src="template.coffee" type="text/coffeescript"></script>
+    -->
+  </head>
+  <body>
+    <div id="layers" style='margin: auto; z-index: -1'></div>
+    <div id='total-utility'></div>
+    <!-- Placed at end so that rest of page loaded -->
+    <script src="data.js"></script>
+    <script src="model.js"></script>
+  </body>
+</html>
