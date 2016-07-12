@@ -8,6 +8,7 @@ class Neighborhood extends ABM.Model
     @percent_open = 1
     @threshold    = 2
     @open_patches = []
+    console.log 'Setup complete!'
 
   setup: ->
     for p in @patches
@@ -75,7 +76,7 @@ class Neighborhood extends ABM.Model
   set_open: (@percent_open)   -> @reset_model()
 
 
-modelOpts = { size: 5, minX: 0, maxX: 50, minY: 0, maxY: 50, div: 'model' }
+modelOpts = { size: 5, minX: 0, maxX: 150, minY: 0, maxY: 150, div: 'model' }
 model = window.model = new Neighborhood(modelOpts)
 
 model.on 'step', () ->

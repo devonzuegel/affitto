@@ -1,19 +1,53 @@
 <html>
 <head>
-<title>Life Model</title>
-<script src="../lib/agentscript.js"></script>
-<script src="../tools/dat.gui.min.js"></script>
-<script src="../lib/as.dat.gui.js"></script>
-<script src="../tools/coffee-script.js"></script>
+  <title>Mr. Schelling's Neighborhood</title>
+  <script type='text/javascript' src="../lib/agentscript.js"></script>
+  <script type='text/javascript' src="../tools/dat.gui.min.js"></script>
+  <script type='text/javascript' src="../lib/as.dat.gui.js"></script>
+  <script type='text/javascript' src="../tools/coffee-script.js"></script>
+
 </head>
-<body><div id="model"></div></body>
-<script src="mr-schellings-neighborhood.js"></script>
+
+<body>
+  <div id="model"></div>
+
+  <div id='explanation'>
+    <h2>Mr. Schelling's Neighborhood</h2>
+
+    <p>You are looking at a birds-eye view of a simulated neighborhood containing two groups, blue and red with a handful of blank spaces. To start, the blues and reds are randomly distributed. Then, frame after frame the little agents are allowed to move. The agent is happy with its position if its nearest neighbors include at least a certain number of its own color; otherwise, they move to a random open space on the map.</p>
+
+    <p>The default number of same-colored neighbors required to make an agent satisfied with its location is the <b>threshold</b>, and the percent of "empty lost" on the map is the <b>percent open</b>.</p>
+  </div>
+
+</body>
+
+<script type='text/javascript' src="https://cdn.rawgit.com//devonzuegel/affitto/master/models/lib/agentscript.js"></script>
+<script type='text/javascript' src="https://cdn.rawgit.com//devonzuegel/affitto/master/models/tools/dat.gui.min.js"></script>
+<script type='text/javascript' src="https://cdn.rawgit.com//devonzuegel/affitto/master/models/lib/as.dat.gui.js"></script>
+<script type='text/javascript' src="https://cdn.rawgit.com//devonzuegel/affitto/master/models/tools/coffee-script.js"></script>
+
+<script type='text/javascript' src="https://rawgit.com/devonzuegel/affitto/master/models/lib/agentscript.js"></script>
+<script type='text/javascript' src="https://rawgit.com/devonzuegel/affitto/master/models/tools/dat.gui.min.js"></script>
+<script type='text/javascript' src="https://rawgit.com/devonzuegel/affitto/master/models/lib/as.dat.gui.js"></script>
+<script type='text/javascript' src="https://rawgit.com/devonzuegel/affitto/master/models/tools/coffee-script.js"></script>
+
+<script type='text/javascript' src="mr-schellings-neighborhood.js"></script>
 
 <style type="text/css">
+  body {
+    width: 65%;
+  }
   #model {
+    float: left;
     display: inline-block;
     border:  1px solid #444;
     margin:  5px;
+    z-index: -1;
+  }
+
+  #explanation {
+    float: left;
+    margin: 5px;
   }
 </style>
 </html>
